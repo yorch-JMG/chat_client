@@ -95,8 +95,9 @@ async fn main() -> Result<(), Error> {
                     Ok(v) => {
                         let user = v[..15].to_string();
                         let msg = v[15..].to_string();
-                        let decrypted_msg = decrypt_message(&v[15..].to_string()).unwrap();
+                        let decrypted_msg = decrypt_message(&msg.to_string()).unwrap();
                         println!("{} :{:?}", &user, decrypted_msg);
+                        println!();
                     }
                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                 };
@@ -113,7 +114,8 @@ async fn main() -> Result<(), Error> {
                 let mut buff = msg.clone().into_bytes();
                 buff.resize(MSG_SIZE, 0);
                 client.write_all(&buff).expect("writing to socket failed");
-                println!("message sent {:?}", msg);
+                println!("You sent {:?}", msg);
+                println!();
             }
             Err(TryRecvError::Empty) => (),
             Err(TryRecvError::Disconnected) => break,
@@ -122,7 +124,7 @@ async fn main() -> Result<(), Error> {
         thread::sleep(Duration::from_millis(100));
     });
 
-    println!("Write a Message:");
+    println!("Write a message:");
     loop {
         let mut buff = String::new();
         io::stdin()
