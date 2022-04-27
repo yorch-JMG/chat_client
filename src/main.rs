@@ -1,3 +1,5 @@
+use colored::Colorize;
+use local_ip_address::linux::local_ip;
 use pyo3::{types::PyModule, PyResult, Python};
 use reqwest::Error;
 use std::io::{self, ErrorKind, Read, Write};
@@ -20,6 +22,16 @@ struct Message {
 fn generate_key() -> String {
     let mut rng = thread_rng();
     (0..KEY_SIZE).map(|_| rng.sample(Alphanumeric) as char).collect()
+}
+
+fn check_if_message_is_yours(user: &String, message: &String) {
+    let your_ip_addr = local_ip().unwrap();
+    if user.eq(&your_ip_addr.to_string()) {
+        println!("{}: {}", user.blue(), message.yellow());
+    }
+    else {
+        println!("{}: {}", user.magenta(), message.yellow());
+    }
 }
 
 fn get_data(encrypted_message: &String) -> Message {
@@ -70,7 +82,6 @@ def vigenere_encrypt(text: str, key: str):
             "vigenere",
         )?;
         let new_key: String = generate_key().to_lowercase();
-        println!("{}", new_key);
         let encrypted_message: String = encryption
             .getattr("vigenere_encrypt")?
             .call1((message, new_key.to_string()))?
@@ -133,7 +144,7 @@ async fn main() -> Result<(), Error> {
                         let user = v[..15].to_string();
                         let msg = v[15..].to_string();
                         let decrypted_msg = decrypt_message(&msg.to_string()).unwrap();
-                        println!("{} :{:?}", &user, decrypted_msg);
+                        check_if_message_is_yours(&user, &decrypted_msg);
                         println!();
                     }
                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
