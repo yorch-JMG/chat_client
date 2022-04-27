@@ -6,33 +6,39 @@ use std::str;
 use std::sync::mpsc::{self, TryRecvError};
 use std::thread;
 use std::time::Duration;
-use rand::random;
+use rand::{Rng, thread_rng};
+use rand::distributions::Alphanumeric;
 
 const LOCAL: &str = "127.0.0.1:6000";
 const MSG_SIZE: usize = 64;
 const KEY_SIZE: usize = 10;
-
 struct Message {
     key: String,
     message: String
 }
 
 fn generate_key() -> String {
-    (0..KEY_SIZE).map(|_| (0x20u8 + (random::<f32>() * 96.0) as u8) as char).collect()
+    let mut rng = thread_rng();
+    (0..KEY_SIZE).map(|_| rng.sample(Alphanumeric) as char).collect()
 }
 
 fn get_data(encrypted_message: &String) -> Message {
-    let message_len = encrypted_message.chars().count();
-    let split_key = &encrypted_message[0..5];
-    let split_key2 = &encrypted_message[message_len-4..message_len];
-    let message = &encrypted_message[5..message_len-4];
-    let original_key = format!("{}{}", split_key, split_key2);
-    return Message { key: original_key, message: message.to_string() }
+    let message_len = encrypted_message.len();
+    println!("Message len: {}", message_len);
+    let split_key = &encrypted_message[..5];
+    println!("Key split 1: {}", split_key);
+    let split_key2 = &encrypted_message[message_len-5..message_len];
+    println!("Key split 2: {}", split_key2);
+    let message = &encrypted_message[5..message_len-5].to_string();
+    println!("Message: {}", message);
+    let key = format!("{}{}", split_key, split_key2).to_string();
+    println!("Key: {}", key);
+    return Message { key, message: message.to_string() }
 }
 
 fn make_final_encripted_message(encrypted_message: &String, key: &String) -> String {
-    let split_key = &key[0..5];
-    let split_key2 = &key[6..10];
+    let split_key = &key[..5];
+    let split_key2 = &key[5..10];
     let message = format!("{}{}{}", split_key, encrypted_message, split_key2);
     return message
 }
@@ -63,7 +69,7 @@ def vigenere_encrypt(text: str, key: str):
             "vigenere.py",
             "vigenere",
         )?;
-        let new_key: String = generate_key();
+        let new_key: String = generate_key().to_lowercase();
         println!("{}", new_key);
         let encrypted_message: String = encryption
             .getattr("vigenere_encrypt")?
