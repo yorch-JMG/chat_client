@@ -6,9 +6,36 @@ use std::str;
 use std::sync::mpsc::{self, TryRecvError};
 use std::thread;
 use std::time::Duration;
+use rand::random;
 
 const LOCAL: &str = "127.0.0.1:6000";
 const MSG_SIZE: usize = 64;
+const KEY_SIZE: usize = 10;
+
+struct Message {
+    key: String,
+    message: String
+}
+
+fn generate_key() -> String {
+    (0..KEY_SIZE).map(|_| (0x20u8 + (random::<f32>() * 96.0) as u8) as char).collect()
+}
+
+fn get_data(encrypted_message: &String) -> Message {
+    let message_len = encrypted_message.chars().count();
+    let split_key = &encrypted_message[0..5];
+    let split_key2 = &encrypted_message[message_len-4..message_len];
+    let message = &encrypted_message[5..message_len-4];
+    let original_key = format!("{}{}", split_key, split_key2);
+    return Message { key: original_key, message: message.to_string() }
+}
+
+fn make_final_encripted_message(encrypted_message: &String, key: &String) -> String {
+    let split_key = &key[0..5];
+    let split_key2 = &key[6..10];
+    let message = format!("{}{}{}", split_key, encrypted_message, split_key2);
+    return message
+}
 
 fn encrypt_message(message: &String) -> PyResult<String> {
     pyo3::prepare_freethreaded_python();
@@ -36,11 +63,14 @@ def vigenere_encrypt(text: str, key: str):
             "vigenere.py",
             "vigenere",
         )?;
+        let new_key: String = generate_key();
+        println!("{}", new_key);
         let encrypted_message: String = encryption
             .getattr("vigenere_encrypt")?
-            .call1((message, "hola".to_string()))?
+            .call1((message, new_key.to_string()))?
             .extract()?;
-        Ok(encrypted_message)
+        let final_message: String = make_final_encripted_message(&encrypted_message, &new_key);
+        Ok(final_message)
     })
 }
 
@@ -70,9 +100,10 @@ def vigenere_decrypt(text: str, key: str):
             "vigenere.py",
             "vigenere",
         )?;
+        let message_data: Message = get_data(&message);
         let decrypted_message: String = decryption
             .getattr("vigenere_decrypt")?
-            .call1((message, "hola"))?
+            .call1((message_data.message, message_data.key))?
             .extract()?;
         Ok(decrypted_message)
     })
