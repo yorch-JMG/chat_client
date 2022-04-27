@@ -27,10 +27,10 @@ fn generate_key() -> String {
 fn check_if_message_is_yours(user: &String, message: &String) {
     let your_ip_addr = local_ip().unwrap();
     if user.eq(&your_ip_addr.to_string()) {
-        println!("{}: {}", user.blue(), message.yellow());
+        println!("{}: {}", user.truecolor(57, 14, 230), message.truecolor(255, 255, 255));
     }
     else {
-        println!("{}: {}", user.magenta(), message.yellow());
+        println!("{}: {}", user.magenta(), message.truecolor(255, 255, 255));
     }
 }
 
@@ -162,7 +162,7 @@ async fn main() -> Result<(), Error> {
                 let mut buff = msg.clone().into_bytes();
                 buff.resize(MSG_SIZE, 0);
                 client.write_all(&buff).expect("writing to socket failed");
-                println!("You sent {:?}", msg);
+                println!("{} {}", "You sent:".truecolor(14, 230, 71), msg);
                 println!();
             }
             Err(TryRecvError::Empty) => (),
@@ -172,7 +172,8 @@ async fn main() -> Result<(), Error> {
         thread::sleep(Duration::from_millis(100));
     });
 
-    println!("Write a message:");
+    let welcome_message = "Write a message:";
+    println!("{}", welcome_message.truecolor(171, 36, 255));
     loop {
         let mut buff = String::new();
         io::stdin()
